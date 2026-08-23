@@ -1,0 +1,44 @@
+{
+  "name": "dsh-internet-access",
+  "version": "0.1.0",
+  "description": "DSH Web 公网访问插件：一键 Cloudflare quick tunnel 把 dsh web GUI 暴露到互联网（带简单访问口令门禁，无扫码配对），设置页卡片控制隧道启停与口令",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "tunnel",
+    "cloudflare",
+    "public-access",
+    "remote"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.1",
+    "cloudflared": "^0.7.3"
+  }
+}

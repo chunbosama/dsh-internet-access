@@ -1,0 +1,17 @@
+# ============================================================================
+# dsh-internet-access —— DSH bundle patch
+# ============================================================================
+# 这是插件的"挂载声明"。DSH 启动时按 bundle 层栈叠加各插件 patch，
+# 本文件会把「公网访问」插件插入 Web profile 的配置树：
+#   host 半区  —— 隧道管理 + 访问口令门禁 + /public 转发通道 + /api/public-access 路由族
+#   browser 半区 —— 设置页「公网访问」卡片（隧道启停/公网链接/口令管理）
+#
+# 安装方式：
+#   dsh plugin --profile web add dsh-internet-access
+# 或本地开发安装：
+#   dsh plugin --profile web add link:<本目录绝对路径>
+# ============================================================================
+
+- insert:
+    - id: dsh-internet-access
+      name: dsh-internet-access
