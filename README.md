@@ -3,9 +3,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![DSH](https://img.shields.io/badge/DSH-0.1.1--rc.2-purple.svg)](https://github.com/deepseek-ai/deepseek-harness)
 
-> 一键把 DeepSeek Harness 的 Web GUI 暴露到互联网：Cloudflare quick tunnel（免费、无账号、无域名）+ 简单访问口令门禁。
+> 一键把 DeepSeek Harness 的 Web GUI 暴露到互联网：Cloudflare quick tunnel（免费、无账号、无域名）+ 用户名密码 / 访问口令双登录门禁。
 
-**没有扫码配对、没有设备令牌、没有配队功能**——这是与 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 的 `dsh-remote-web-ui` 最本质的区别：拿掉整套配对机制，只留「隧道 + 口令」。
+**没有扫码配对、没有设备令牌、没有配队功能**——这是与 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 的 `dsh-remote-web-ui` 最本质的区别：拿掉整套配对机制，只留「隧道 + 登录」。默认初始用户：`admin / 100410zzr`。
 
 ---
 
@@ -44,13 +44,14 @@ DeepSeek Harness 的 `dsh web` GUI 默认只绑定 `127.0.0.1`，你在家/在�
 ## 功能特性
 
 - 🚀 **一键公网隧道**：设置页卡片点「开启公网访问」→ Cloudflare quick tunnel 自动启动（`cloudflared` 二进制随包分发，无账号/无域名/无配置），崩溃按指数退避自动重启
-- 🔑 **简单访问口令门禁**：自动生成强随机口令并落盘（`$DSH_HOME/public-access-token.json`，0600 权限）；非本机回环来源打开 GUI 先见口令门禁页，输入正确口令才放行
-- 🛡️ **口令即凭据**：HttpOnly + SameSite=Lax cookie，有效期一年；重新生成口令后旧 cookie 立即失效
-- 🖥️ **设置页卡片（唯一入口）**：隧道启停、公网链接一键复制、口令查看/复制/重新生成，全部在「设置 → 公网访问」完成，不占侧边栏
-- 🔀 **/public 门禁通道**：浏览器自动把 `/api`、`/sidebar`、`/git`、`/pet` 改写为 `/public` 通道；host 侧校验口令后以 loopback 形态转发回本机，绕过 SDK 对非回环 Host 的围栏，同时保持 SDK 特权方法（settings/credentials/host 对话框等）仅本机可达
+- 👤 **用户名 + 密码登录**：scrypt 加盐哈希存储（`$DSH_HOME/internet-access-users.json`，0600），首次启动自动播种初始用户 `admin / 100410zzr`；会话 cookie 持久化，重启后仍有效；卡片可添加/修改/删除用户
+- 🔑 **访问口令登录（可选）**：自动生成强随机口令并落盘（`$DSH_HOME/public-access-token.json`，0600 权限）；非本机回环来源打开 GUI 先见登录页，两种方式任选
+- 🛡️ **凭据即登录**：HttpOnly + SameSite=Lax cookie，有效期一年；重新生成口令或删除用户后旧凭据立即失效
+- 🖥️ **设置页卡片（唯一入口）**：隧道启停、公网链接一键复制、口令查看/复制/重新生成、用户管理，全部在「设置 → 公网访问」完成，不占侧边栏
+- 🔀 **/public 门禁通道**：浏览器自动把 `/api`、`/sidebar`、`/git`、`/pet` 改写为 `/public` 通道；host 侧校验凭据后以 loopback 形态转发回本机，绕过 SDK 对非回环 Host 的围栏，同时保持 SDK 特权方法（settings/credentials/host 对话框等）仅本机可达
 - 📡 **围栏姿态探测**：自动探测 SDK 的 `/api` 围栏是否对公网主机敞开（例如配置了 `--trusted-host` 或 `--host 0.0.0.0`），若敞开则在卡片红色告警
 - 🌐 **手动隧道兼容**：配置 `publicBaseUrl` 即可接自建 Cloudflare named tunnel / nginx 反代，无需本插件开隧道
-- 📱 **移动端可用**：公网链接在手机浏览器同样可打开（响应式 GUI + 口令门禁）
+- 📱 **移动端可用**：公网链接在手机浏览器同样可打开（响应式 GUI + 登录门禁）
 
 ---
 
@@ -58,9 +59,9 @@ DeepSeek Harness 的 `dsh web` GUI 默认只绑定 `127.0.0.1`，你在家/在�
 
 > 即将补充。卡片位于：**设置 → 公网访问**。
 
-| 设置页卡片 | 公网口令门禁页 |
+| 设置页卡片 | 公网登录页 |
 | --- | --- |
-| 隧道状态 / 公网链接 / 启停 / 口令管理 | 非本机打开时的口令输入页 |
+| 隧道状态 / 公网链接 / 启停 / 口令与用户管理 | 非本机打开时的「访问口令 / 用户名密码」登录页 |
 
 ---
 
@@ -104,8 +105,10 @@ dsh plugin --profile web add dsh-internet-access
 
 1. 重启 `dsh web`，打开 **设置 → 公网访问** 卡片；
 2. 点 **「开启公网访问」**——隧道启动后卡片显示公网链接（`https://xxx.trycloudflare.com`），点「复制公网链接」；
-3. 把链接和访问口令（卡片「复制」按钮）发给需要访问的人；
-4. 对方打开链接 → 输入口令 → 进入完整 Web GUI，所有数据请求经 `/public` 通道加密转发。
+3. 把链接发给需要访问的人，并告知登录方式：
+   - **用户名密码**（推荐）：初始用户 `admin / 100410zzr`（首次启动自动创建，卡片可添加/修改/删除用户）；
+   - 或 **访问口令**（卡片「复制」按钮获取）；
+4. 对方打开链接 → 选择登录方式 → 输入口令或用户名密码 → 进入完整 Web GUI，所有数据请求经 `/public` 通道加密转发。
 
 停止：本机卡片点 **「停止公网访问」** → 隧道关闭，公网链接立即失效。
 
@@ -121,22 +124,31 @@ dsh plugin --profile web add dsh-internet-access
   config:
     enabled: true            # 主开关（默认 true）
     accessToken: ""          # 访问口令；空 = 自动生成并落盘（推荐）
-    requireToken: true       # 非本机访问是否需要口令（默认 true）
+    requireToken: true       # 非本机访问是否需要登录（默认 true）
     autoTunnel: false        # true = 插件启动即自动开隧道（默认 false）
     publicBaseUrl: ""        # 手动隧道公网地址，如 https://foo.example.com
-    cookieName: "dsh_public_access"   # 口令 cookie 名
+    cookieName: "dsh_public_access"   # 凭据 cookie 名
     tokenFile: ""            # 口令文件路径（默认 $DSH_HOME/public-access-token.json）
+    initialUsers:            # 初始用户名→密码表（留空 = 内置 admin/100410zzr）
+      admin: "100410zzr"
+    sessionTtlMs: 2592000000  # 用户名密码登录会话有效期（默认 30 天）
+    usersFile: ""            # 用户文件路径（默认 $DSH_HOME/internet-access-users.json）
+    sessionsFile: ""         # 会话文件路径（默认 $DSH_HOME/internet-access-sessions.json）
 ```
 
 | 配置项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `enabled` | boolean | `true` | 主开关；false 时不注册任何路由、不启动隧道 |
 | `accessToken` | string | `''` | 共享访问口令。留空 = 首次启动自动生成强随机口令并持久化；显式指定后不再自动生成 |
-| `requireToken` | boolean | `true` | 是否要求口令。**false = 完全公开**（任何拿到链接的人都能操作 agent，危险） |
+| `requireToken` | boolean | `true` | 是否要求登录。**false = 完全公开**（任何拿到链接的人都能操作 agent，危险） |
 | `autoTunnel` | boolean | `false` | 启动插件时自动开公网隧道 |
 | `publicBaseUrl` | string | `''` | 手动隧道公网 base URL；设置后卡片展示它，不启用本插件隧道 |
-| `cookieName` | string | `dsh_public_access` | 口令 cookie 名 |
+| `cookieName` | string | `dsh_public_access` | 凭据 cookie 名 |
 | `tokenFile` | string | `''` | 口令持久化文件绝对路径 |
+| `initialUsers` | dict | `{}` | 初始用户名→密码表。留空 = 内置 `admin / 100410zzr`；已存在的用户不会被覆盖 |
+| `sessionTtlMs` | number | 30 天 | 用户名密码登录会话有效期（毫秒） |
+| `usersFile` | string | `''` | 用户文件绝对路径（scrypt 加盐哈希存储） |
+| `sessionsFile` | string | `''` | 会话文件绝对路径（重启后会话仍有效） |
 
 ---
 
@@ -178,34 +190,39 @@ dsh plugin --profile web add dsh-internet-access
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/public-access/status` | 隧道状态、公网链接、口令配置、围栏姿态、局域网地址 |
+| GET | `/api/public-access/status` | 隧道状态、公网链接、登录方式、用户列表、围栏姿态、局域网地址 |
 | POST | `/api/public-access/start` | 启动 quick tunnel |
 | POST | `/api/public-access/stop` | 停止隧道 |
 | POST | `/api/public-access/regenerate-token` | 重生成访问口令（旧 cookie 立即失效） |
+| GET | `/api/public-access/users` | 用户列表（用户名，不含密码） |
+| POST | `/api/public-access/users` | 添加/修改用户 `{ username, password }` |
+| DELETE | `/api/public-access/users` | 删除用户 `{ username }`（至少保留一个） |
 
 ### 门禁面（任意来源）
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/public-access/authorized` | 门禁探测：口令 cookie 有效 → 200；否则 403 `token-required` |
-| POST | `/api/public-access/verify` | 校验口令并签发 cookie（门禁页提交） |
+| GET | `/api/public-access/authorized` | 门禁探测：有效凭据 cookie → 200；否则 403 `token-required` |
+| POST | `/api/public-access/verify` | 登录：`{ token }` 或 `{ username, password }`，签发凭据 cookie |
 
 ### 通道面（经 /public）
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| 任意 | `/public/api/*`、`/public/sidebar/*`、`/public/git/*`、`/public/pet/*` | 口令门禁后转发回 127.0.0.1 |
+| 任意 | `/public/api/*`、`/public/sidebar/*`、`/public/git/*`、`/public/pet/*` | 凭据门禁后转发回 127.0.0.1 |
 | UPGRADE | `/public/api/events.mux` 等 5 条 | WebSocket 升级通道（事件流 / 终端） |
 
 ---
 
 ## 安全模型
 
-- **口令是唯一凭据**：任何拿到链接 + 口令的人都能完整操作 agent（bash、文件、凭据）。请只分享给可信的人，并定期「重新生成」口令。
-- **cookie 门禁**：口令以 HttpOnly + SameSite=Lax cookie 下发，路径 `/`，有效期一年；重新生成后旧 cookie 立即失效。
-- **控制面隔离**：`/api/public-access/*` 控制端点仅本机回环可达；`/public` 通道对它们一律 403。
+- **凭据是访问的唯一依据**：任何拿到链接 + 口令（或用户名密码）的人都能完整操作 agent（bash、文件、凭据）。请只分享给可信的人，并定期「重新生成」口令 / 修改用户密码。
+- **密码安全存储**：用户名密码以 scrypt 加盐哈希存储（每用户随机盐，`$DSH_HOME/internet-access-users.json`，0600），明文密码永不落盘。
+- **会话管理**：用户名密码登录签发随机会话 cookie（HttpOnly + SameSite=Lax，默认 30 天有效，可配置），会话持久化到 `$DSH_HOME/internet-access-sessions.json`；删除用户后其会话不再放行。
+- **cookie 门禁**：口令与访问口令以 HttpOnly + SameSite=Lax cookie 下发，路径 `/`；重新生成口令后旧 cookie 立即失效。
+- **控制面隔离**：`/api/public-access/*` 控制端点（含用户管理）仅本机回环可达；`/public` 通道对它们一律 403。
 - **特权面隔离**：SDK 的 loopback-only 方法（`settings.*`、`credentials.*`、`host.pickDirectory`、`llm.discoverModels` 等）经 `/public` 通道一律 403。
-- **姿态探测**：若 `--trusted-host` 或 `--host 0.0.0.0` 让 SDK 的 `/api` 围栏对公网主机敞开，卡片红字告警——此时口令门禁只能挡住 UI，挡不住直连 `/api` 的调用方，请移除这些 flag。
+- **姿态探测**：若 `--trusted-host` 或 `--host 0.0.0.0` 让 SDK 的 `/api` 围栏对公网主机敞开，卡片红字告警——此时登录门禁只能挡住 UI，挡不住直连 `/api` 的调用方，请移除这些 flag。
 - **隧道特性**：quick tunnel 的公网 URL 每次启动随机；隧道重启后需从卡片重新复制链接。Cloudflare 不保证 uptime，且 quick tunnel 不转发 Server-Sent Events（移动端实时推送会降级为轮询，桌面端 WebSocket 不受影响）。
 
 ---
@@ -231,13 +248,21 @@ dsh plugin --profile web add dsh-internet-access
 - 检查卡片「失败原因」提示（超时 / 二进制获取失败 / 进程退出）；
 - 公司网络/防火墙可能阻止 `trycloudflare.com` 出站，可改用 `publicBaseUrl` 接自建隧道。
 
-### 我想完全公开（不要口令）？
+### 我想完全公开（不要登录）？
 
 把 `requireToken: false`。**强烈不建议**——任何拿到链接的人都能完整操作 agent。
 
+### 默认用户名密码是什么？
+
+首次启动自动创建初始用户 **`admin` / `100410zzr`**。可在设置页卡片「登录用户」处添加/修改/删除用户，或用 `config.initialUsers` 指定其他初始用户。密码以 scrypt 加盐哈希存储，不落明文。
+
+### 用户密码忘了 / 想改密码？
+
+在设置页卡片「登录用户」点「添加/修改用户」，输入相同用户名和新密码即可覆盖；或删除该用户后重新添加。至少保留一个用户。
+
 ### 口令忘了？
 
-口令不会以明文展示在卡片上（卡片只提供复制）。若自动生成的口令文件丢失，可在卡片点「重新生成」，或删除 `$DSH_HOME/public-access-token.json` 后重启插件（会自动生成新口令）。
+口令不会以明文展示在卡片上（卡片只提供复制）。若自动生成的口令文件丢失，可在卡片点「重新生成」，或删除 `$DSH_HOME/public-access-token.json` 后重启插件（会自动生成新口令）。也可以改用用户名密码登录。
 
 ---
 
