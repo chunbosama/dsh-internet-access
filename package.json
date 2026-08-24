@@ -1,7 +1,7 @@
 {
   "name": "dsh-internet-access",
-  "version": "0.1.0",
-  "description": "DSH Web 公网访问插件：一键 Cloudflare quick tunnel 把 dsh web GUI 暴露到互联网（带简单访问口令门禁，无扫码配对），设置页卡片控制隧道启停与口令",
+  "version": "0.1.1",
+  "description": "DSH Web 公网访问插件：一键 Cloudflare quick tunnel 把 dsh web GUI 暴露到互联网（用户名密码 / 访问口令双登录门禁，无扫码配对）。首次启动需在本机设置初始用户名密码，设置页卡片控制隧道启停、口令与用户管理",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

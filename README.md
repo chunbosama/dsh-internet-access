@@ -5,7 +5,7 @@
 
 > 一键把 DeepSeek Harness 的 Web GUI 暴露到互联网：Cloudflare quick tunnel（免费、无账号、无域名）+ 用户名密码 / 访问口令双登录门禁。
 
-**没有扫码配对、没有设备令牌、没有配队功能**——这是与 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 的 `dsh-remote-web-ui` 最本质的区别：拿掉整套配对机制，只留「隧道 + 登录」。默认初始用户：`admin / 100410zzr`。
+**没有扫码配对、没有设备令牌、没有配队功能**——这是与 [dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui) 的 `dsh-remote-web-ui` 最本质的区别：拿掉整套配对机制，只留「隧道 + 登录」。首次启动需在本机设置页设置初始用户名 + 密码，不内置任何默认账号。
 
 ---
 
@@ -44,7 +44,7 @@ DeepSeek Harness 的 `dsh web` GUI 默认只绑定 `127.0.0.1`，你在家/在�
 ## 功能特性
 
 - 🚀 **一键公网隧道**：设置页卡片点「开启公网访问」→ Cloudflare quick tunnel 自动启动（`cloudflared` 二进制随包分发，无账号/无域名/无配置），崩溃按指数退避自动重启
-- 👤 **用户名 + 密码登录**：scrypt 加盐哈希存储（`$DSH_HOME/internet-access-users.json`，0600），首次启动自动播种初始用户 `admin / 100410zzr`；会话 cookie 持久化，重启后仍有效；卡片可添加/修改/删除用户
+- 👤 **用户名 + 密码登录**：scrypt 加盐哈希存储（`$DSH_HOME/internet-access-users.json`，0600）。首次启动不预置任何账号——需在本机设置页**设置初始用户名 + 密码**（也支持 `config.initialUsers` 预设）；会话 cookie 持久化，重启后仍有效；卡片可添加/修改/删除用户
 - 🔑 **访问口令登录（可选）**：自动生成强随机口令并落盘（`$DSH_HOME/public-access-token.json`，0600 权限）；非本机回环来源打开 GUI 先见登录页，两种方式任选
 - 🛡️ **凭据即登录**：HttpOnly + SameSite=Lax cookie，有效期一年；重新生成口令或删除用户后旧凭据立即失效
 - 🖥️ **设置页卡片（唯一入口）**：隧道启停、公网链接一键复制、口令查看/复制/重新生成、用户管理，全部在「设置 → 公网访问」完成，不占侧边栏
@@ -106,7 +106,7 @@ dsh plugin --profile web add dsh-internet-access
 1. 重启 `dsh web`，打开 **设置 → 公网访问** 卡片；
 2. 点 **「开启公网访问」**——隧道启动后卡片显示公网链接（`https://xxx.trycloudflare.com`），点「复制公网链接」；
 3. 把链接发给需要访问的人，并告知登录方式：
-   - **用户名密码**（推荐）：初始用户 `admin / 100410zzr`（首次启动自动创建，卡片可添加/修改/删除用户）；
+   - **用户名密码**（推荐）：首次启动时已在**本机设置页**设置好初始用户名 + 密码（设置 → 公网访问卡片顶部出现「首次启动：设置初始用户名和密码」表单）；
    - 或 **访问口令**（卡片「复制」按钮获取）；
 4. 对方打开链接 → 选择登录方式 → 输入口令或用户名密码 → 进入完整 Web GUI，所有数据请求经 `/public` 通道加密转发。
 
@@ -129,7 +129,7 @@ dsh plugin --profile web add dsh-internet-access
     publicBaseUrl: ""        # 手动隧道公网地址，如 https://foo.example.com
     cookieName: "dsh_public_access"   # 凭据 cookie 名
     tokenFile: ""            # 口令文件路径（默认 $DSH_HOME/public-access-token.json）
-    initialUsers:            # 初始用户名→密码表（留空 = 内置 admin/100410zzr）
+    initialUsers:            # 初始用户名→密码表（留空 = 首次启动在本机设置页创建初始账号）
       admin: "100410zzr"
     sessionTtlMs: 2592000000  # 用户名密码登录会话有效期（默认 30 天）
     usersFile: ""            # 用户文件路径（默认 $DSH_HOME/internet-access-users.json）
@@ -145,7 +145,7 @@ dsh plugin --profile web add dsh-internet-access
 | `publicBaseUrl` | string | `''` | 手动隧道公网 base URL；设置后卡片展示它，不启用本插件隧道 |
 | `cookieName` | string | `dsh_public_access` | 凭据 cookie 名 |
 | `tokenFile` | string | `''` | 口令持久化文件绝对路径 |
-| `initialUsers` | dict | `{}` | 初始用户名→密码表。留空 = 内置 `admin / 100410zzr`；已存在的用户不会被覆盖 |
+| `initialUsers` | dict | `{}` | 初始用户名→密码表。留空 = 不预置任何账号，首次启动需在本机设置页 / `/api/public-access/setup` 创建初始用户名+密码；已存在的用户不会被覆盖 |
 | `sessionTtlMs` | number | 30 天 | 用户名密码登录会话有效期（毫秒） |
 | `usersFile` | string | `''` | 用户文件绝对路径（scrypt 加盐哈希存储） |
 | `sessionsFile` | string | `''` | 会话文件绝对路径（重启后会话仍有效） |
@@ -194,6 +194,7 @@ dsh plugin --profile web add dsh-internet-access
 | POST | `/api/public-access/start` | 启动 quick tunnel |
 | POST | `/api/public-access/stop` | 停止隧道 |
 | POST | `/api/public-access/regenerate-token` | 重生成访问口令（旧 cookie 立即失效） |
+| POST | `/api/public-access/setup` | **首次初始化**（仅回环、且仅当尚无任何用户）：`{ username, password, confirm }` 创建初始账号；已有用户后返回 409，防止公网抢占 |
 | GET | `/api/public-access/users` | 用户列表（用户名，不含密码） |
 | POST | `/api/public-access/users` | 添加/修改用户 `{ username, password }` |
 | DELETE | `/api/public-access/users` | 删除用户 `{ username }`（至少保留一个） |
@@ -252,9 +253,9 @@ dsh plugin --profile web add dsh-internet-access
 
 把 `requireToken: false`。**强烈不建议**——任何拿到链接的人都能完整操作 agent。
 
-### 默认用户名密码是什么？
+### 首次启动如何设置用户名密码？
 
-首次启动自动创建初始用户 **`admin` / `100410zzr`**。可在设置页卡片「登录用户」处添加/修改/删除用户，或用 `config.initialUsers` 指定其他初始用户。密码以 scrypt 加盐哈希存储，不落明文。
+**插件不内置任何默认账号。** 首次启动后，在本机（127.0.0.1）打开 **设置 → 公网访问** 卡片，顶部会出现「首次启动：设置初始用户名和密码」表单——填写用户名、密码（至少 8 位）并确认即可创建第一个账号。该操作仅本机可用（`/api/public-access/setup` 仅回环放行，且已有用户后返回 409，防止公网抢占）。也可用 `config.initialUsers` 预置初始用户。密码以 scrypt 加盐哈希存储，不落明文。
 
 ### 用户密码忘了 / 想改密码？
 
